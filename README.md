@@ -17,7 +17,13 @@
 
 ## 数据布局与解析
 
-在 `data/` 下观察到的 tick 文件布局：
+新数据根目录示例（与旧结构兼容）： 
+
+```
+/home/chenyongyuan/tick_tokenizer/data/2025年/202501/2025-01-09/601599.csv
+```
+
+旧结构示例：
 
 ```
 data/YYYY/MM/DD/YYYY-MM-DD/<stock_id>.csv
@@ -26,7 +32,7 @@ data/YYYY/MM/DD/YYYY-MM-DD/<stock_id>.csv
 解析规则（硬编码）：
 
 - `stock_id` 为文件名去后缀（例如 `000001.csv` -> `000001`）。
-- `trade_date` 为路径中第一个 `YYYY-MM-DD`，若不存在则从 `YYYY/MM/DD` 组合。
+- `trade_date` 优先解析路径中的 `YYYY-MM-DD`，若不存在则支持 `YYYYMMDD`，或从相邻目录组合 `YYYY/MM/DD`（含中文“年/月/日”也可）。
 - 若解析失败，记录错误并跳过该文件。
 
 输入列名（逗号或制表符分隔，支持有表头或无表头）：
@@ -113,32 +119,34 @@ pix = min(v, log1p(count_cap)) / log1p(count_cap)
 
 ## 输出格式
 
-每个 `(stock_id, trade_date)` 输出一个文件：
+每个 `(stock_id, trade_date)` 输出一个文件（按年月日分层目录存储）： 
 
 ```
-out/<stock_id>_<trade_date>.npz
+out/YYYY/MM/DD/<stock_id>_<trade_date>.pt
 ```
 
-内容包含：
+内容为 `torch.save` 的字典：
 
-- `heatmaps`：`(240, 2, 32, 32)` 数组
-- `metadata`：JSON 字符串，字段包括
+- `heatmaps`：`(240, 2, 32, 32)` 的 `torch.Tensor`
+- `metadata`：Python `dict`，字段包括
   `stock_id`、`trade_date`、`pref`、`pixel_scale`、`count_cap`、`r_max`、`s`、
   `v_cap`、`t_slots`、`channels`、`height`、`width`、`unknown_type_count`、
   `out_of_session_count`、`total_ticks`、`used_fallback_pref`
 
 ## CLI 用法
 
-示例（数据位于 `/data/zhaoenyue/data`）：
+示例（数据位于 `/home/chenyongyuan/tick_tokenizer/data`）：
 
 ```
 python -m scripts.build_heatmaps \
-  --input /data/zhaoenyue/data \
+  --input /home/chenyongyuan/tick_tokenizer/data \
   --output /data/zhaoenyue/out \
   --pref_map /path/to/pref_map.csv \
   --pixel_scale true \
   --workers 4
 ```
+
+注意：输出为 `.pt`，需要安装 `torch` 才能保存与读取。
 
 可选参数：
 
@@ -156,6 +164,17 @@ python -m scripts.build_heatmaps \
 
 ```
 pytest -q
+```
+
+## 工具脚本
+
+分析 out_of_session 的时间分布（支持导出分钟粒度 CSV）：
+
+```
+python -m scripts.analyze_out_of_session \
+  --input /home/chenyongyuan/tick_tokenizer/data \
+  --output_csv /data/zhaoenyue/out/out_of_session_minutes.csv \
+  --top_k 10
 ```
 
 ## 常见问题

@@ -25,7 +25,11 @@ def _str_to_bool(value: str) -> bool:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build tick->minute heatmaps")
-    parser.add_argument("--input", default="data", help="Input data directory")
+    parser.add_argument(
+        "--input",
+        default="/home/chenyongyuan/tick_tokenizer/data",
+        help="Input data directory",
+    )
     parser.add_argument("--output", default="out", help="Output directory")
     parser.add_argument("--pref_map", default="", help="Pref map path (CSV/Parquet/JSON)")
     parser.add_argument("--auto_pref", type=_str_to_bool, default=False, help="Auto-detect pref map")

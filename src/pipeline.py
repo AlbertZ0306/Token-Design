@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import json
 import logging
 import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
-
 import numpy as np
 import pandas as pd
 
@@ -102,10 +99,32 @@ def _resolve_pref(
     return float(valid_prices.iloc[0]), True
 
 
+def _require_torch():
+    try:
+        import torch  # type: ignore
+    except Exception as exc:
+        raise RuntimeError("torch is required for tensor output") from exc
+    return torch
+
+
+def _sanitize_metadata(metadata: dict[str, object]) -> dict[str, object]:
+    sanitized: dict[str, object] = {}
+    for key, value in metadata.items():
+        if isinstance(value, np.generic):
+            sanitized[key] = value.item()
+        else:
+            sanitized[key] = value
+    return sanitized
+
+
 def save_heatmaps(path: Path, heatmaps: np.ndarray, metadata: dict[str, object]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    metadata_json = json.dumps(metadata, ensure_ascii=True)
-    np.savez_compressed(path, heatmaps=heatmaps, metadata=metadata_json)
+    torch = _require_torch()
+    payload = {
+        "heatmaps": torch.from_numpy(heatmaps),
+        "metadata": _sanitize_metadata(metadata),
+    }
+    torch.save(payload, path)
 
 
 def process_file(
@@ -200,7 +219,8 @@ def process_file(
         "used_fallback_pref": used_fallback,
     }
 
-    output_path = output_dir / f"{stock_id}_{trade_date}.npz"
+    year, month, day = trade_date.split("-")
+    output_path = output_dir / year / month / day / f"{stock_id}_{trade_date}.pt"
     save_heatmaps(output_path, heatmaps, metadata)
 
     return ProcessResult(

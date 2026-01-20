@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-import json
 import math
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from src.config import CANONICAL_COLUMNS, HeatmapConfig
 from src.pipeline import process_file
 
 
 def test_end2end_small(tmp_path: Path) -> None:
+    torch = pytest.importorskip("torch")
     input_dir = tmp_path / "data" / "2018" / "12" / "25" / "2018-12-25"
     input_dir.mkdir(parents=True)
     file_path = input_dir / "000001.csv"
@@ -35,9 +36,9 @@ def test_end2end_small(tmp_path: Path) -> None:
     assert result.status == "ok"
     assert result.output_path is not None
 
-    data = np.load(result.output_path, allow_pickle=True)
-    heatmaps = data["heatmaps"]
-    metadata = json.loads(data["metadata"].item())
+    payload = torch.load(result.output_path, map_location="cpu")
+    heatmaps = payload["heatmaps"].cpu().numpy()
+    metadata = payload["metadata"]
 
     assert heatmaps.shape == (240, 2, 32, 32)
     assert np.all(heatmaps[2] == 0)

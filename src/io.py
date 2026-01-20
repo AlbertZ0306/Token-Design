@@ -13,8 +13,10 @@ from .config import CANONICAL_COLUMNS, REQUIRED_COLUMNS
 logger = logging.getLogger(__name__)
 
 DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
+DATE8_RE = re.compile(r"\d{8}")
 YEAR_RE = re.compile(r"\d{4}")
 MONTH_DAY_RE = re.compile(r"\d{1,2}")
+DIGIT_RE = re.compile(r"\d+")
 
 DEFAULT_SUFFIXES = (".csv", ".tsv", ".txt")
 
@@ -35,22 +37,43 @@ def parse_stock_date(path: Path) -> tuple[str, str]:
         raise ValueError(f"Empty stock_id from path: {path}")
 
     trade_date = None
-    parts = list(path.parts)
+    parts = list(path.parent.parts)
     for part in reversed(parts):
         if DATE_RE.fullmatch(part):
             trade_date = part
             break
 
     if trade_date is None:
+        for part in reversed(parts):
+            digits = DIGIT_RE.findall(part)
+            if not digits:
+                continue
+            value = digits[0]
+            if DATE8_RE.fullmatch(value):
+                trade_date = f"{value[0:4]}-{value[4:6]}-{value[6:8]}"
+                break
+
+    if trade_date is None:
+        digits_parts = [DIGIT_RE.findall(part) for part in parts]
         for i in range(len(parts) - 3, -1, -1):
-            year = parts[i]
+            year = digits_parts[i][0] if digits_parts[i] else ""
             if not YEAR_RE.fullmatch(year):
                 continue
-            month = parts[i + 1]
-            day = parts[i + 2]
+            month = digits_parts[i + 1][0] if digits_parts[i + 1] else ""
+            day = digits_parts[i + 2][0] if digits_parts[i + 2] else ""
             if not (MONTH_DAY_RE.fullmatch(month) and MONTH_DAY_RE.fullmatch(day)):
                 continue
             trade_date = f"{year}-{int(month):02d}-{int(day):02d}"
+            break
+
+    if trade_date is None:
+        digits_parts = [DIGIT_RE.findall(part) for part in parts]
+        for i in range(len(parts) - 2, -1, -1):
+            year_month = digits_parts[i][0] if digits_parts[i] else ""
+            day = digits_parts[i + 1][0] if digits_parts[i + 1] else ""
+            if len(year_month) != 6 or not MONTH_DAY_RE.fullmatch(day):
+                continue
+            trade_date = f"{year_month[0:4]}-{year_month[4:6]}-{int(day):02d}"
             break
 
     if trade_date is None:
