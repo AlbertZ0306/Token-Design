@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -17,6 +17,7 @@ from .pref import (
     normalize_stock_id,
     normalize_trade_date,
 )
+from .stock_board import get_r_max_for_stock
 
 logger = logging.getLogger(__name__)
 
@@ -186,8 +187,17 @@ def process_file(
             reason="pref_invalid",
         )
 
+    # 动态计算r_max
+    if config.r_max is None:
+        dynamic_r_max = get_r_max_for_stock(stock_id)
+    else:
+        dynamic_r_max = config.r_max
+
+    # 创建临时配置覆盖r_max
+    config_with_r_max = replace(config, r_max=dynamic_r_max)
+
     try:
-        heatmaps, stats = build_heatmaps(df, pref, config)
+        heatmaps, stats = build_heatmaps(df, pref, config_with_r_max)
     except Exception as exc:
         return ProcessResult(
             status="error",
@@ -204,15 +214,15 @@ def process_file(
         "stock_id": stock_id,
         "trade_date": trade_date,
         "pref": pref,
-        "pixel_scale": config.pixel_scale,
-        "count_cap": config.count_cap,
-        "r_max": config.r_max,
-        "s": config.s,
-        "v_cap": config.v_cap,
-        "t_slots": config.t_slots,
-        "channels": config.channels,
-        "height": config.height,
-        "width": config.width,
+        "pixel_scale": config_with_r_max.pixel_scale,
+        "count_cap": config_with_r_max.count_cap,
+        "r_max": config_with_r_max.r_max,
+        "s": config_with_r_max.s,
+        "v_cap": config_with_r_max.v_cap,
+        "t_slots": config_with_r_max.t_slots,
+        "channels": config_with_r_max.channels,
+        "height": config_with_r_max.height,
+        "width": config_with_r_max.width,
         "unknown_type_count": stats.unknown_type_count,
         "out_of_session_count": stats.out_of_session_count,
         "total_ticks": stats.total_ticks,

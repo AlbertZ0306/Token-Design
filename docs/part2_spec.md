@@ -6,7 +6,7 @@
 
 - 输入热力图 shape：`(B, T, 2, 32, 32)`
 - 通道含义：`C=0` 为 B，`C=1` 为 S
-- 时间 slot：`0..239`
+- 时间 slot：`0..238`
 - 值域：`[0, 1]`（与 Part 1 的 `pixel_scale=True` 对齐）
 
 ## 模块接口
@@ -72,7 +72,7 @@ ResBlock(c)：
 Linear(256->1024) + GELU + Dropout(0.1)
 Linear(1024->4096) + LayerNorm
 alpha * z (alpha 可学习，初始 0.1)
-Slot Embedding (240, 4096) + LayerNorm
+Slot Embedding (239, 4096) + LayerNorm
 ```
 
 ## 解码器结构（Decoder）
@@ -90,11 +90,11 @@ Out:     Conv(32->2,k1) + Sigmoid              -> (N, 2, 32, 32)
 
 ## 关键超参数
 
-- slot 数：`240`
+- slot 数：`239`
 - 隐空间维度：`4096`
 - Dropout：`0.1`
 - Alpha：可学习标量，初始 `0.1`
-- Slot Embedding：`(240, 4096)`
+- Slot Embedding：`(239, 4096)`
 - Upsample：`nearest`
 
 ## 测试
@@ -111,6 +111,6 @@ pytest -q
 
 ## 常见问题
 
-- `slot_id out of range`：确保 slot_id 在 `[0, 239]`
+- `slot_id out of range`：确保 slot_id 在 `[0, 238]`
 - `input must be (B,T,2,32,32)`：确保维度和通道正确
 - `dtype`：输入建议为 float32，内部会自动转为 float

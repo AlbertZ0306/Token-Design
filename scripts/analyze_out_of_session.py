@@ -13,6 +13,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.io import read_tick_file, scan_tick_files
+from src.paths import TICK_DATA_DIR, ANALYSIS_DIR
 from src.time_binning import map_times_to_slots, time_to_seconds
 
 
@@ -144,12 +145,12 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Analyze out-of-session ticks")
     parser.add_argument(
         "--input",
-        default="/home/chenyongyuan/tick_tokenizer/data",
+        default=str(TICK_DATA_DIR),
         help="Input data directory",
     )
     parser.add_argument(
         "--output_csv",
-        default="",
+        default=str(ANALYSIS_DIR / "minute_distribution.csv"),
         help="Optional CSV output path for minute distribution",
     )
     parser.add_argument("--top_k", type=int, default=10)

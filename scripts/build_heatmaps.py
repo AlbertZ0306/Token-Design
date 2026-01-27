@@ -11,6 +11,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from src.config import HeatmapConfig
+from src.paths import TICK_DATA_DIR, HEATMAPS_DIR, DEFAULT_PREF_MAP
 from src.pipeline import run_pipeline
 
 
@@ -27,15 +28,20 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build tick->minute heatmaps")
     parser.add_argument(
         "--input",
-        default="/home/chenyongyuan/tick_tokenizer/data",
+        default=str(TICK_DATA_DIR),
         help="Input data directory",
     )
-    parser.add_argument("--output", default="out", help="Output directory")
-    parser.add_argument("--pref_map", default="", help="Pref map path (CSV/Parquet/JSON)")
+    parser.add_argument("--output", default=str(HEATMAPS_DIR), help="Output directory")
+    parser.add_argument("--pref_map", default=str(DEFAULT_PREF_MAP), help="Pref map path (CSV/Parquet/JSON)")
     parser.add_argument("--auto_pref", type=_str_to_bool, default=False, help="Auto-detect pref map")
     parser.add_argument("--pixel_scale", type=_str_to_bool, default=True)
     parser.add_argument("--count_cap", type=int, default=128)
-    parser.add_argument("--r_max", type=float, default=math.log(1.2))
+    parser.add_argument(
+        "--r_max",
+        type=float,
+        default=None,
+        help="Max price ratio (log of limit), None for auto-detect by stock code (default: None)",
+    )
     parser.add_argument("--s", type=float, default=0.02)
     parser.add_argument("--v_cap", type=int, default=50000)
     parser.add_argument("--allow_fallback_pref", type=_str_to_bool, default=False)
@@ -53,7 +59,7 @@ def main() -> int:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
 
-    pref_map_path = Path(args.pref_map) if args.pref_map else None
+    pref_map_path = Path(args.pref_map) if args.pref_map and Path(args.pref_map).exists() else None
     config = HeatmapConfig(
         pixel_scale=args.pixel_scale,
         count_cap=args.count_cap,

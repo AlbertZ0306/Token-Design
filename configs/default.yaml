@@ -1,0 +1,29 @@
+# 数据路径
+data:
+  raw_tick_dir: "data/raw/tick"
+  pref_dir: "data/raw/pref"
+  heatmaps_dir: "data/processed/heatmaps"
+  analysis_dir: "data/processed/analysis"
+
+# 日志配置
+logging:
+  dir: "logs"
+  level: "INFO"
+  format: "%(asctime)s %(levelname)s %(name)s: %(message)s"
+
+# 模型配置
+model:
+  checkpoints_dir: "checkpoints"
+
+# 热力图配置（保持与HeatmapConfig一致）
+heatmap:
+  t_slots: 239
+  height: 32
+  width: 32
+  r_max: null  # null表示根据股票代码自动调整
+  s: 0.02
+  v_cap: 50000
+  pixel_scale: true
+  count_cap: 128
+  channels: ["B", "S"]
+  allow_fallback_pref: false

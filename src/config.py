@@ -6,11 +6,11 @@ import math
 
 @dataclass(frozen=True)
 class HeatmapConfig:
-    t_slots: int = 240
+    t_slots: int = 239
     channels: int = 2
     height: int = 32
     width: int = 32
-    r_max: float = math.log(1.2)
+    r_max: float | None = None  # None表示根据股票代码动态调整
     s: float = 0.02
     v_cap: int = 50000
     pixel_scale: bool = True
