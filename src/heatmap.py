@@ -39,6 +39,45 @@ def price_to_x_idx(prices: np.ndarray, pref: float, width: int, r_max: float, s:
     return np.clip(x_idx, 0, width - 1)
 
 
+def price_to_x_idx_linear(prices: np.ndarray, pref: float, width: int, r_max: float) -> np.ndarray:
+    """
+    基于原始价格比 P/Pref 的线性分桶。
+
+    主板（10%限制）：ratio范围 [0.9, 1.1] 映射到索引 [0, 31]
+    创业板/科创板（20%限制）：ratio范围 [0.8, 1.2] 映射到索引 [0, 31]
+
+    Args:
+        prices: 成交价格数组
+        pref: 参考价格（前收盘价）
+        width: 价格桶数量（通常为32）
+        r_max: 最大对数收益率（如主板为log(1.1)，创业板为log(1.2)）
+
+    Returns:
+        桶索引数组，范围 [0, width-1]
+    """
+    if pref <= 0:
+        raise ValueError("Pref must be positive")
+    if width <= 1:
+        raise ValueError("Width must be > 1")
+
+    # 从r_max计算比率边界
+    ratio_lower = math.exp(-r_max)  # 主板: 0.9, 创业板: 0.8
+    ratio_upper = math.exp(r_max)   # 主板: 1.1, 创业板: 1.2
+
+    with np.errstate(divide="ignore", invalid="ignore"):
+        ratios = prices / pref
+
+    # 裁断到边界
+    ratios_clipped = np.clip(ratios, ratio_lower, ratio_upper)
+
+    # 线性映射到桶索引
+    x_idx = np.floor(
+        ((ratios_clipped - ratio_lower) / (ratio_upper - ratio_lower)) * (width - 1)
+    ).astype(np.int32)
+
+    return np.clip(x_idx, 0, width - 1)
+
+
 def volume_to_y_idx(volumes: np.ndarray, height: int, v_cap: int) -> np.ndarray:
     if height <= 1:
         raise ValueError("Height must be > 1")
@@ -82,7 +121,13 @@ def build_heatmaps(df: pd.DataFrame, pref: float, config: HeatmapConfig) -> tupl
     unknown_type_count = 0
     if np.any(valid_mask):
         slot_idx = slots[valid_mask]
-        x_idx = price_to_x_idx(prices[valid_mask], pref, config.width, config.r_max, config.s)
+        # 根据分桶模式选择函数
+        if config.binning_mode == "linear":
+            x_idx = price_to_x_idx_linear(prices[valid_mask], pref, config.width, config.r_max)
+        elif config.binning_mode == "tanh":
+            x_idx = price_to_x_idx(prices[valid_mask], pref, config.width, config.r_max, config.s)
+        else:
+            raise ValueError(f"Unsupported binning_mode: {config.binning_mode}. Must be 'tanh' or 'linear'")
         y_idx = volume_to_y_idx(volumes[valid_mask], config.height, config.v_cap)
         types_valid = types[valid_mask]
 

@@ -220,6 +220,10 @@ python -m scripts.build_heatmaps \
 
 ### 价格分桶（32桶）
 
+系统支持两种价格分桶模式：**tanh模式**（默认，非线性映射）和**linear模式**（线性映射）。
+
+#### Tanh模式（默认）
+
 价格轴使用Pref相对收益+tanh非线性映射：
 
 ```
@@ -233,6 +237,30 @@ x_idx = floor(((x + 1) / 2) * (W - 1))
 - `r_max`：价格相对收益上限（动态调整或手动指定）
 - `s`：价格分桶步长，默认`0.02`
 - `W`：价格桶数，固定`32`
+
+#### Linear模式（新增）
+
+价格轴使用原始价格比P/Pref的线性映射：
+
+```
+ratio = P / Pref
+ratio_lower = exp(-r_max)  # 主板: 0.909, 创业板: 0.833
+ratio_upper = exp(r_max)   # 主板: 1.1, 创业板: 1.2
+ratio_clipped = clip(ratio, ratio_lower, ratio_upper)
+x_idx = floor((ratio_clipped - ratio_lower) / (ratio_upper - ratio_lower) * (W - 1))
+```
+
+特点：
+- 价格比在[exp(-r_max), exp(r_max)]范围内**均匀分布**到32个桶
+- 主板（10%限制）：ratio范围[0.909, 1.1]
+- 创业板/科创板（20%限制）：ratio范围[0.833, 1.2]
+
+#### 分桶模式对比
+
+| 模式 | 映射方式 | 中间值分桶 | 适用场景 |
+|------|----------|------------|----------|
+| tanh | 非线性（tanh函数） | 中心密集，边缘稀疏 | 强调接近pref的价格变化 |
+| linear | 线性均匀分布 | 均匀分布 | 所有价格区间等权重 |
 
 ### 成交量分桶（32桶）
 
@@ -278,6 +306,7 @@ metadata = {
     "count_cap": 128,
     "r_max": 0.0953101798,  # 根据板块自动调整
     "s": 0.02,
+    "binning_mode": "tanh",  # 分桶模式: "tanh" 或 "linear"
     "v_cap": 50000,
     "t_slots": 239,
     "channels": 2,
@@ -287,7 +316,7 @@ metadata = {
     "out_of_session_count": 123,
     "total_ticks": 50000,
     "used_fallback_pref": false,
-    "board_type": "main_board"  # 新增：板块类型
+    "board_type": "main_board"  # 板块类型
 }
 ```
 
@@ -328,7 +357,8 @@ python -m scripts.build_heatmaps \
 | `--output` | `data/processed/heatmaps` | 输出热力图目录 |
 | `--pref_map` | `data/raw/pref/pref_map.csv` | Pref映射文件路径 |
 | `--r_max` | `None` | 价格收益上限（None表示动态调整） |
-| `--s` | `0.02` | 价格分桶步长 |
+| `--s` | `0.02` | 价格分桶步长（tanh模式） |
+| `--binning_mode` | `tanh` | 价格分桶模式：`tanh`（默认）或`linear` |
 | `--v_cap` | `50000` | 成交量上限 |
 | `--pixel_scale` | `true` | 是否启用像素缩放 |
 | `--count_cap` | `128` | 像素缩放上限 |
@@ -375,6 +405,34 @@ python -m scripts.build_heatmaps \
   --output data/processed/heatmaps \
   --pref_map data/raw/pref/pref_map.csv \
   --r_max 0.1823215568  # 强制使用20%限制
+```
+
+**使用线性分桶模式：**
+
+```bash
+python -m scripts.build_heatmaps \
+  --input data/raw/tick \
+  --output data/processed/heatmaps_linear \
+  --pref_map data/raw/pref/pref_map.csv \
+  --binning_mode linear
+```
+
+**对比两种分桶模式：**
+
+```bash
+# 使用tanh模式（默认）
+python -m scripts.build_heatmaps \
+  --input data/raw/tick \
+  --output data/processed/heatmaps_tanh \
+  --pref_map data/raw/pref/pref_map.csv \
+  --binning_mode tanh
+
+# 使用linear模式
+python -m scripts.build_heatmaps \
+  --input data/raw/tick \
+  --output data/processed/heatmaps_linear \
+  --pref_map data/raw/pref/pref_map.csv \
+  --binning_mode linear
 ```
 
 ## 测试

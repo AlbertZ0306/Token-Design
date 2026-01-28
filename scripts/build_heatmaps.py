@@ -43,6 +43,13 @@ def parse_args() -> argparse.Namespace:
         help="Max price ratio (log of limit), None for auto-detect by stock code (default: None)",
     )
     parser.add_argument("--s", type=float, default=0.02)
+    parser.add_argument(
+        "--binning_mode",
+        type=str,
+        default="tanh",
+        choices=["tanh", "linear"],
+        help="价格分桶模式: 'tanh'（默认，非线性）或 'linear'（均匀分布）",
+    )
     parser.add_argument("--v_cap", type=int, default=50000)
     parser.add_argument("--allow_fallback_pref", type=_str_to_bool, default=False)
     parser.add_argument("--workers", type=int, default=1)
@@ -67,6 +74,7 @@ def main() -> int:
         s=args.s,
         v_cap=args.v_cap,
         allow_fallback_pref=args.allow_fallback_pref,
+        binning_mode=args.binning_mode,
     )
 
     run_pipeline(

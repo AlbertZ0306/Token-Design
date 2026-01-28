@@ -85,6 +85,10 @@ Slot 固定且硬编码：
 
 ## 价格与成交量分桶
 
+系统支持两种价格分桶模式：**tanh模式**（默认）和**linear模式**（新增）。
+
+### Tanh模式（默认）
+
 价格轴（W=32）使用 Pref 相对收益 + tanh：
 
 ```
@@ -95,6 +99,25 @@ x_idx = floor(((x + 1) / 2) * (W - 1))
 ```
 
 默认 `s = 0.02`。
+
+### Linear模式（新增）
+
+价格轴（W=32）使用原始价格比 P/Pref 的线性映射：
+
+```
+ratio = P / Pref
+ratio_lower = exp(-r_max)
+ratio_upper = exp(r_max)
+ratio_clipped = clip(ratio, ratio_lower, ratio_upper)
+x_idx = floor((ratio_clipped - ratio_lower) / (ratio_upper - ratio_lower) * (W - 1))
+```
+
+特点：
+- 价格比在[exp(-r_max), exp(r_max)]范围内**均匀分布**到32个桶
+- 主板（10%限制）：ratio范围[0.909, 1.1]
+- 创业板/科创板（20%限制）：ratio范围[0.833, 1.2]
+
+### 成交量分桶
 
 成交量轴（H=32）使用 log1p 与固定上限：
 
@@ -187,6 +210,7 @@ python -m scripts.build_heatmaps \
 - `--count_cap 128`
 - `--progress true/false`（是否显示进度条）
 - `--s 0.02`
+- `--binning_mode tanh/linear`（价格分桶模式，默认tanh）
 - `--v_cap 50000`
 - `--r_max`（可选，默认根据股票代码自动调整）
 

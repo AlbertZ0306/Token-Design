@@ -218,6 +218,7 @@ def process_file(
         "count_cap": config_with_r_max.count_cap,
         "r_max": config_with_r_max.r_max,
         "s": config_with_r_max.s,
+        "binning_mode": config_with_r_max.binning_mode,
         "v_cap": config_with_r_max.v_cap,
         "t_slots": config_with_r_max.t_slots,
         "channels": config_with_r_max.channels,

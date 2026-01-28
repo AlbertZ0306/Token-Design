@@ -16,6 +16,7 @@ class HeatmapConfig:
     pixel_scale: bool = True
     count_cap: int = 128
     allow_fallback_pref: bool = False
+    binning_mode: str = "tanh"  # 新增: "tanh" 或 "linear"
 
 
 CANONICAL_COLUMNS = [
