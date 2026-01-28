@@ -359,9 +359,9 @@ python -m scripts.build_heatmaps \
 | `--r_max` | `None` | 价格收益上限（None表示动态调整） |
 | `--s` | `0.02` | 价格分桶步长（tanh模式） |
 | `--binning_mode` | `tanh` | 价格分桶模式：`tanh`（默认）或`linear` |
-| `--v_cap` | `50000` | 成交量上限 |
+| `--v_cap` | `32768` | 成交量上限 |
 | `--pixel_scale` | `true` | 是否启用像素缩放 |
-| `--count_cap` | `128` | 像素缩放上限 |
+| `--count_cap` | `1024` | 像素缩放上限 |
 | `--allow_fallback_pref` | `false` | 允许使用首笔价格作为Pref |
 | `--auto_pref` | `false` | 自动发现Pref文件 |
 | `--workers` | `1` | 并发处理进程数 |

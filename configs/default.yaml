@@ -22,8 +22,8 @@ heatmap:
   width: 32
   r_max: null  # null表示根据股票代码自动调整
   s: 0.02
-  v_cap: 50000
+  v_cap: 32768
   pixel_scale: true
-  count_cap: 128
+  count_cap: 1024
   channels: ["B", "S"]
   allow_fallback_pref: false
